@@ -10,8 +10,9 @@ def apply(A, x):
     return torch.einsum('ij,bmj->bmi', A, x)
 
 class SimpleAttention(torch.nn.Module):
-    def __init__(self, n, m):
+    def __init__(self, n, m, norm):
         super().__init__()
+        self.norm = norm
         A = torch.nn.Parameter(torch.rand(m, n))
         B = torch.nn.Parameter(torch.rand(m, n))
         self.register_parameter('A', A)
@@ -21,9 +22,10 @@ class SimpleAttention(torch.nn.Module):
         # x.shape: b, k, n
         query = apply(self.A, x).sum(1)
         query.sum(1)
-        query = query / (eps+torch.linalg.norm(query, dim=1, keepdims=True))
         keys = apply(self.B, x)
-        keys = keys / (eps+torch.linalg.norm(keys, dim=2, keepdims=True))
+        if self.norm:
+            query = query / (eps+torch.linalg.norm(query, dim=1, keepdims=True))
+            keys = keys / (eps+torch.linalg.norm(keys, dim=2, keepdims=True))
         # keys.shape: (b, k, m)
         # query.shape: (b, k)
         # similarity.shape: (b, k)
